@@ -4,7 +4,7 @@ module Paperclip
   # when the model saves, deletes when the model is destroyed, and processes
   # the file upon assignment.
   class Attachment
-    
+
     def self.default_options
       @default_options ||= {
         :url           => "/system/:attachment/:id/:style/:filename",
@@ -57,7 +57,7 @@ module Paperclip
     # errors, assigns attributes, processes the file, and runs validations. It
     # also queues up the previous file for deletion, to be flushed away on
     # #save of its host.  In addition to form uploads, you can also assign
-    # another Paperclip attachment: 
+    # another Paperclip attachment:
     #   new_user.avatar = old_user.avatar
     # If the file that is assigned is not valid, the processing (i.e.
     # thumbnailing, etc) will NOT be run.
@@ -78,14 +78,14 @@ module Paperclip
 
       @queued_for_write[:original]   = uploaded_file.to_tempfile
       instance_write(:file_name,       uploaded_file.original_filename.strip.gsub(/[^A-Za-z\d\.\-_]+/, '_'))
-      instance_write(:content_type,    uploaded_file.content_type.to_s.strip)
+      instance_write(:content_type,    identify_content_type(uploaded_file))
       instance_write(:file_size,       uploaded_file.size.to_i)
       instance_write(:updated_at,      Time.now)
 
       @dirty = true
 
       post_process if valid?
- 
+
       # Reset the file size if the original file was reprocessed.
       instance_write(:file_size, @queued_for_write[:original].size.to_i)
     ensure
@@ -182,8 +182,8 @@ module Paperclip
     def content_type
       instance_read(:content_type)
     end
-    
-    # Returns the last modified time of the file as originally assigned, and 
+
+    # Returns the last modified time of the file as originally assigned, and
     # lives in the <attachment>_updated_at attribute of the model.
     def updated_at
       time = instance_read(:updated_at)
@@ -223,7 +223,7 @@ module Paperclip
         true
       end
     end
-    
+
     # Returns true if a file has been assigned.
     def file?
       !original_filename.blank?
@@ -407,6 +407,21 @@ module Paperclip
       @errors.each do |error, message|
         [message].flatten.each {|m| instance.errors.add(name, m) }
       end
+    end
+
+    def identify_content_type(uploaded_file)
+      file_type = nil
+      silence_stderr do
+        output = `identify "#{uploaded_file.path}"`
+        match_data = / (\w+) (\d+)x(\d+) /.match(output)
+        file_type = match_data[1].to_s.downcase if match_data.size>1
+      end
+      if defined?(MIME) && defined?(MIME::Types) and file_type and !MIME::Types.type_for(file_type).empty?
+        return MIME::Types.type_for(file_type).first.simplified
+      end
+      return uploaded_file.content_type.to_s.strip
+    rescue
+      uploaded_file.content_type.to_s.strip
     end
 
   end
