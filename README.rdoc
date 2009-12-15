@@ -172,3 +172,19 @@ guidelines:
 2. Make sure there are tests! We will not accept any patch that is not tested.
    It's a rare time when explicit tests aren't needed. If you have questions
    about writing tests for paperclip, please ask the mailing list.
+
+
+==Additional Processors
+
+- icon_stretch.rb         -  streaching small icons to any size
+- watermark.rb            -  applying a watermark to image
+- white_background.rb     -  used for resizing bigger images to smaller one without loosing image sizes.
+
+Usage:
+
+has_attached_file :asset, :styles =>{:normal      => {:geometry=>'300x300>',:processors => [:icon_stretch, :thumbnail, :watermark, :white_background]}}
+
+
+
+
+
